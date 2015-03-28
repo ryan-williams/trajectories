@@ -118,6 +118,40 @@ var PlateauLine = React.createClass({
   }
 });
 
+var DraggableCorner = React.createClass({
+  getInitialState: function() {
+    return {};
+  },
+  handleStart: function (event, ui) {
+    if (!this.state.dragStartY) {
+      console.log("storing drag start x,y: %d,%d", this.props.x, this.props.y);
+      this.state.dragStartX = this.props.x;
+      this.state.dragStartY = this.props.y;
+    }
+  },
+  handleDrag: function (event, ui) {
+    //console.log("updating x, original: %d, new: %d", this.state.dragStartX, this.state.dragStartX + ui.position.left);
+    this.props.updateXY(this.state.dragStartX + ui.position.left, this.state.dragStartY - ui.position.top);
+  },
+  render: function() {
+    return (
+          <ReactDraggable
+                zIndex={100}
+                onStart={this.handleStart}
+                onDrag={this.handleDrag}
+          >
+            <rect
+                  className="draggable-corner"
+                  height={20}
+                  width={20}
+                  x={this.props.origin[0] + this.props.x - 10}
+                  y={this.props.origin[1] - this.props.y - 10}
+            />
+          </ReactDraggable>
+    );
+  }
+});
+
 var Plot = React.createClass({
   getInitialState: function() {
     return {
@@ -139,6 +173,7 @@ var Plot = React.createClass({
     this.setState({ x: x });
   },
   updateY: function(y) { this.setState({ y: y }); },
+  updateXY: function(x, y) { this.setState({ x:x, y:y })},
   render: function() {
     var updatePoint = this.updatePoint;
     var circles = this.state.points.map(function(point, idx) {
@@ -156,6 +191,7 @@ var Plot = React.createClass({
       <path d={path(firstPoint, yBasePoint)} />
       <YLine base={yBasePoint} length={this.state.y} x={this.state.x} updateX={this.updateX} />
       <PlateauLine base={yTopPoint} length={500} y={this.state.y} updateY={this.updateY} />
+      <DraggableCorner origin={firstPoint} x={this.state.x} y={this.state.y} updateXY={this.updateXY} />
     </svg>;
   }
 });
