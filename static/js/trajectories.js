@@ -5,31 +5,17 @@ var Circle = React.createClass({
     return {};
   },
   handleStart: function (event, ui) {
-    console.log("dragStart: %O %O [%d,%d] [%d,%d] [%d,%d]",
-          event, ui,
-          event.clientX, event.clientY,
-          event.pageX, event.pageY,
-          ui.position.left, ui.position.top
-    );
     if (!this.state.startPx) {
       this.state.startPx = this.props.coordsToSvg(this.props.p);
     }
   },
   handleDrag: function (event, ui) {
-    //console.log("drag: %O %O [%d,%d] [%d,%d] [%d,%d] [%d,%d] [%d,%d] [%d,%d]", event, ui, event.x, event.y, event.clientX, event.clientY, event.offsetX, event.offsetY, event.pageX, event.pageY, event.layerX, event.layerY, ui.position.left, ui.position.top);
-    //var svgPoint = this.props.svgToCoords(this.state.dragStart);
     var newPos = [ this.state.startPx[0] + ui.position.left, this.state.startPx[1] + ui.position.top ];
     var coords = this.props.svgToCoords(newPos);
-    //console.log("\tdrag: original: %s, new: %s, coords: %s", this.state.startPx.join(','), newPos.join(','), coords.join(','));
     this.props.onMove(coords);
   },
-  handleStop: function (event, ui) {
-    console.log("dragStop: %O %O [%d,%d] [%d,%d] [%d,%d] [%d,%d] [%d,%d] [%d,%d]", event, ui, event.x, event.y, event.clientX, event.clientY, event.offsetX, event.offsetY, event.pageX, event.pageY, event.layerX, event.layerY, ui.position.left, ui.position.top);
-  },
   render: function() {
-    //console.log("circle props: %O", this.props);
     var center = this.props.coordsToSvg(this.props.p);
-    //console.log("drawing circle at: %O", center);
     return <ReactDraggable
           onStart={this.handleStart}
           onDrag={this.handleDrag}
@@ -78,11 +64,9 @@ var YLine = React.createClass({
   handleStart: function (event, ui) {
     if (!this.state.originalSvgX) {
       this.state.originalSvgX = this.props.coordsToSvg([ this.props.x, 0 ])[0];
-      console.log("storing drag start x: %d as %d", this.props.x, this.state.originalSvgX);
     }
   },
   handleDrag: function (event, ui) {
-    //console.log("updating x, original: %d, new: %d", this.state.originalSvgX, this.state.originalSvgX + ui.position.left);
     this.props.updateX(this.props.svgToCoords([this.state.originalSvgX + ui.position.left, 0])[0]);
   },
   render: function() {
@@ -109,7 +93,6 @@ var PlateauLine = React.createClass({
   },
   handleStart: function (event, ui) {
     if (!this.state.dragStartY) {
-      console.log("storing drag start y: %d", this.props.base[1]);
       this.state.dragStartY = this.props.coordsToSvg([0,this.props.base[1]])[1];
     }
   },
@@ -119,7 +102,6 @@ var PlateauLine = React.createClass({
   render: function() {
     var to = [ this.props.base[0] + this.props.length, this.props.base[1] ];
     var svgBase = this.props.coordsToSvg(this.props.base);
-    //console.log("rect x,y %d,%d", svgBase[0],svgBase[1]);
     return (
           <ReactDraggable
                 axis="y"
@@ -141,12 +123,10 @@ var DraggableCorner = React.createClass({
   },
   handleStart: function (event, ui) {
     if (!this.state.dragStart) {
-      console.log("storing drag start x,y: %d,%d", this.props.x, this.props.y);
       this.state.dragStart = this.props.coordsToSvg([this.props.x, this.props.y]);
     }
   },
   handleDrag: function (event, ui) {
-    //console.log("updating x, original: %d, new: %d", this.state.dragStartX, this.state.dragStartX + ui.position.left);
     var xy = this.props.svgToCoords([ this.state.dragStart[0] + ui.position.left, this.state.dragStart[1] + ui.position.top ]);
     this.props.updateXY(xy[0], xy[1]);
   },
@@ -216,22 +196,17 @@ var Page = React.createClass({
       h: 250,
       svgToCoords: function(p) {
         var ret = [ (p[0] - this.origin[0]) / this.sx, (this.h - this.origin[1] - p[1])/this.sy ];
-        //console.log("\tsvgToCoords: %s -> %s", p.join(','), ret.join(','));
         return ret;
       }
     }
   },
   coordsToSvg: function(p) {
     var ret = [ p[0]*this.state.sx + this.state.origin[0], this.state.h - this.state.sy*p[1] - this.state.origin[1] ]
-    //console.log("coordsToSvg %O: this: %O, this.state: %O, ret: %O", p, this, this.state, ret);
     return ret;
   },
   updatePoint: function(idx) {
-    //console.log("updatePoint: this: %O, state: %O", this, this.state);
     var state = this.state;
     return function(p) {
-      //console.log("updating point %d from [%d,%d] to [%d,%d]", idx, state.points[idx][0], state.points[idx][1], p[0], p[1]);
-      //console.log("\tupdating point, this: %O, state: %O", this, this.state);
       this.state.points[idx] = p;
       this.setState(state);
     }.bind(this);
@@ -239,7 +214,6 @@ var Page = React.createClass({
   render: function() {
     var methods = {
       path: function() {
-        //console.log("state: %O, this: %O", this.state, this);
         var coordsToSvg = this.state.coordsToSvg;
         return "M" + Array.prototype.slice.call(arguments).map(
                     function(p) {
