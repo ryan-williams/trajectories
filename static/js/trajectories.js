@@ -153,50 +153,67 @@ var DraggableCorner = React.createClass({
 });
 
 var Plot = React.createClass({
-  getInitialState: function() {
-    return {
-      points: [[10,200], [50,10], [75,50]],
-      x: 100,
-      y: 50
-    }
-  },
-  updatePoint: function(idx) {
-    var self = this;
-    var state = this.state;
-    return function(p) {
-      //console.log("updating point %d from [%d,%d] to [%d,%d]", idx, state.points[idx][0], state.points[idx][1], p[0], p[1]);
-      state.points[idx] = p;
-      this.setState(state);
-    }.bind(this);
-  },
-  updateX: function(x) {
-    this.setState({ x: x });
-  },
-  updateY: function(y) { this.setState({ y: y }); },
-  updateXY: function(x, y) { this.setState({ x:x, y:y })},
   render: function() {
-    var updatePoint = this.updatePoint;
-    var circles = this.state.points.map(function(point, idx) {
+    var updatePoint = this.props.updatePoint;
+    var circles = this.props.points.map(function(point, idx) {
       return <Circle p={point} onMove={updatePoint(idx)} />
     });
 
-    var firstPoint = this.state.points[0];
-    var yBasePoint = [ firstPoint[0] + this.state.x, firstPoint[1] ];
-    var yTopPoint = [ yBasePoint[0], yBasePoint[1] - this.state.y ];
-    //var yEndPoint = [ yTopPoint[0] + 500 , yTopPoint[1] ];
+    var firstPoint = this.props.points[0];
+    var yBasePoint = [ firstPoint[0] + this.props.x, firstPoint[1] ];
+    var yTopPoint = [ yBasePoint[0], yBasePoint[1] - this.props.y ];
 
     return <svg className="plot">
-      <Parabola ps={this.state.points}/>
+      <Parabola ps={this.props.points}/>
       {circles}
       <path d={path(firstPoint, yBasePoint)} />
-      <YLine base={yBasePoint} length={this.state.y} x={this.state.x} updateX={this.updateX} />
-      <PlateauLine base={yTopPoint} length={500} y={this.state.y} updateY={this.updateY} />
-      <DraggableCorner origin={firstPoint} x={this.state.x} y={this.state.y} updateXY={this.updateXY} />
+      <YLine base={yBasePoint} length={this.props.y} x={this.props.x} updateX={this.props.updateX} />
+      <PlateauLine base={yTopPoint} length={500} y={this.props.y} updateY={this.props.updateY} />
+      <DraggableCorner origin={firstPoint} x={this.props.x} y={this.props.y} updateXY={this.props.updateXY} />
     </svg>;
   }
 });
 
+var ControlPanel = React.createClass({
+  render: function() {
+    return <div className="control-panel">
+      <div className="control"><span className="label">x:</span><span className="value">{this.props.x}</span></div>
+      <div className="control"><span className="label">y:</span><span className="value">{this.props.y}</span></div>
+    </div>;
+  }
+});
+
+var Page = React.createClass({
+  getInitialState: function() {
+    return {
+      points: [[10,200], [50,10], [75,50]],
+      x: 100,
+      y: 50,
+      updatePoint: function(idx) {
+        var self = this;
+        var state = this.state;
+        return function(p) {
+          //console.log("updating point %d from [%d,%d] to [%d,%d]", idx, state.points[idx][0], state.points[idx][1], p[0], p[1]);
+          state.points[idx] = p;
+          this.setState(state);
+        }.bind(this);
+      },
+      updateX: function(x) {
+        this.setState({ x: x });
+      }.bind(this),
+      updateY: function(y) { this.setState({ y: y }); }.bind(this),
+      updateXY: function(x, y) { this.setState({ x:x, y:y })}.bind(this)
+    }
+  },
+  render: function() {
+    return <div>
+      <Plot {...this.state} />
+      <ControlPanel {...this.state} />
+    </div>
+  }
+});
+
 React.render(
-      <Plot />,
+      <Page />,
       document.getElementById('container')
 );
