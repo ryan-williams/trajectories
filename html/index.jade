@@ -1,0 +1,17 @@
+doctype html
+html(lang="en")
+    head
+        meta(http-equiv='Content-type', content='text/html; charset=utf-8')
+        title= Trajectories
+        link(rel="stylesheet", href="/static/css/base.css")
+    body
+        h1 Trajectories
+        #container
+
+        script(src="/static/js/react/react-with-addons.js")
+        script(src="/static/js/react/react-draggable.js")
+        script(src="/static/js/react/JSXTransformer.js")
+
+        script(type="text/javascript") window.obj = !{JSON.stringify(obj)}
+        script(type="text/jsx", src="/static/js/trajectories.js")
+
