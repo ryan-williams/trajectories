@@ -6,8 +6,27 @@ body {
 
 .plot {
   height: 250px;
+  width: 100%;
   path {
     fill-opacity: 0;
     stroke: black;
+  }
+}
+
+.handle {
+  cursor: ew-resize;
+}
+
+.yline {
+  cursor: ew-resize;
+  rect {
+    fill-opacity: 0;
+  }
+}
+
+.plateau-line {
+  cursor: ns-resize;
+  rect {
+    fill-opacity: 0;
   }
 }
