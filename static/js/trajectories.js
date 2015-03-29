@@ -195,6 +195,8 @@ var ControlPanel = React.createClass({
     return <div className="control-panel">
       <div className="control"><span className="label">x:</span><span className="value">{this.props.x}</span></div>
       <div className="control"><span className="label">y:</span><span className="value">{this.props.y}</span></div>
+      <div className="control"><span className="label">sx:</span><span className="value">{this.props.sx}</span></div>
+      <div className="control"><span className="label">sy:</span><span className="value">{this.props.sy}</span></div>
     </div>;
   }
 });
