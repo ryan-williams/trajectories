@@ -49,8 +49,7 @@ var Parabola = React.createClass({
   render: function() {
     var controlPoint = this.doublePointFromLineMidpoint(this.props.vertex, [0,0], this.props.root);
     return <g>
-      <path d={this.quadraticPath([0,0], controlPoint, this.props.root)} />
-      <path d={this.props.path([0,0], this.props.root)} />
+      <path className={this.props.reflected ? "reflected" : ""} d={this.quadraticPath([0,0], controlPoint, this.props.root)} />
     </g>;
   }
 });
@@ -180,6 +179,12 @@ var Plot = React.createClass({
     return <svg className="plot" height={this.props.h}>
       <GridLines {...this.props} />
       <Parabola {...this.props} />
+      <Parabola
+            reflected={true}
+            vertex={[ this.props.vertex[0], this.props.vertex[0] * Math.tan(Math.PI/2 - this.props.t) / 2 ]}
+            root={this.props.root}
+            coordsToSvg={this.props.coordsToSvg}
+      />
       {circles}
       <path d={this.props.path(firstPoint, yBasePoint)} />
       <YLine base={yBasePoint} length={this.props.y} {...this.props} />
@@ -253,7 +258,7 @@ var Page = React.createClass({
   },
   setRoot: function(p) {
     var vx = p[0] / 2;
-    var t = Math.asin(2 * this.state.g * vx / (this.state.v * this.state.v))/2;
+    var t = Math.PI/2 - Math.asin(2 * this.state.g * vx / (this.state.v * this.state.v))/2;
     if (isNaN(t)) return;
     var vy = vx * Math.tan(t) / 2;
     console.log("setRoot: %f,%f, %f, %s", vx, vy, t, p.join(','));
