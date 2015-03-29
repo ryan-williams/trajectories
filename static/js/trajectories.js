@@ -10,13 +10,17 @@ var Circle = React.createClass({
     }
   },
   handleDrag: function (event, ui) {
-    var newPos = [ this.state.startPx[0] + ui.position.left, this.state.startPx[1] + ui.position.top ];
+    var newPos = [ this.state.startPx[0] + ui.position.left, this.state.startPx[1] + ((this.props.axis) ? 0 : ui.position.top) ];
     var coords = this.props.svgToCoords(newPos);
-    this.props.onMove(coords);
+    if (this.props.onMove) {
+      this.props.onMove(coords);
+    }
   },
   render: function() {
     var center = this.props.coordsToSvg(this.props.p);
+    //console.log("axis: %s", this.props.axis);
     return <ReactDraggable
+          axis={this.props.axis || 'both'}
           onStart={this.handleStart}
           onDrag={this.handleDrag}
           onStop={this.handleStop}
@@ -31,29 +35,23 @@ var Circle = React.createClass({
 });
 
 var Parabola = React.createClass({
+  doublePointFromLineMidpoint: function(p, p1, p2) {
+    var midPoint = [(p1[0] + p2[0]) / 2, (p1[1] + p1[1]) / 2];
+    return [2 * p[0] - midPoint[0], 2 * p[1] - midPoint[1]];
+  },
+  quadraticPath: function(p1, controlPoint, p2) {
+    return [
+      "M" + this.props.coordsToSvg(p1).join(','),
+      "Q" + this.props.coordsToSvg(controlPoint).join(','),
+      this.props.coordsToSvg(p2).join(',')
+    ].join(' ');
+  },
   render: function() {
-    if (this.props.points) {
-      var ps = this.props.points;
-      var midPoint = [(ps[0][0] + ps[2][0]) / 2, (ps[0][1] + ps[2][1]) / 2];
-      var controlPoint = [2 * ps[1][0] - midPoint[0], 2 * ps[1][1] - midPoint[1]]
-      var pathStr = [
-        "M" + this.props.coordsToSvg(this.props.points[0]).join(','),
-        "Q" + this.props.coordsToSvg(controlPoint).join(','),
-        this.props.coordsToSvg(this.props.points[2]).join(',')
-      ].join(' ');
-      return <g>
-        <path d={pathStr}/>
-        <path d={this.props.path(this.props.points[0], this.props.points[2])}/>
-      </g>;
-    } else if (this.props.v && this.props.g && this.props.origin && this.props.t) {
-      function y(x) {
-        return x*Math.tan(t) - g*x*x/(2*v*v*Math.cos(t)*Math.cos(t));
-      }
-      var firstRoot = [0,0];
-      var vertexX = v*v*Math.sin(2*t)/2;
-      var vertex = [ vertexX, vertexX/2 * Math.tan(t) ];
-      var secondRoot = [ 2*vertexX, 0 ];
-    }
+    var controlPoint = this.doublePointFromLineMidpoint(this.props.vertex, [0,0], this.props.root);
+    return <g>
+      <path d={this.quadraticPath([0,0], controlPoint, this.props.root)} />
+      <path d={this.props.path([0,0], this.props.root)} />
+    </g>;
   }
 });
 
@@ -67,7 +65,7 @@ var YLine = React.createClass({
     }
   },
   handleDrag: function (event, ui) {
-    this.props.updateX(this.props.svgToCoords([this.state.originalSvgX + ui.position.left, 0])[0]);
+    this.props.setX(this.props.svgToCoords([this.state.originalSvgX + ui.position.left, 0])[0]);
   },
   render: function() {
     var to = [ this.props.base[0], this.props.base[1] + this.props.length ];
@@ -97,7 +95,7 @@ var PlateauLine = React.createClass({
     }
   },
   handleDrag: function (event, ui) {
-    this.props.updateY(this.props.svgToCoords([0, this.state.dragStartY + ui.position.top])[1]);
+    this.props.setY(this.props.svgToCoords([0, this.state.dragStartY + ui.position.top])[1]);
   },
   render: function() {
     var to = [ this.props.base[0] + this.props.length, this.props.base[1] ];
@@ -128,7 +126,7 @@ var DraggableCorner = React.createClass({
   },
   handleDrag: function (event, ui) {
     var xy = this.props.svgToCoords([ this.state.dragStart[0] + ui.position.left, this.state.dragStart[1] + ui.position.top ]);
-    this.props.updateXY(xy[0], xy[1]);
+    this.props.setXY(xy[0], xy[1]);
   },
   render: function() {
     var svg = this.props.coordsToSvg([ this.props.x, this.props.y ]);
@@ -169,12 +167,13 @@ var GridLines = React.createClass({
 
 var Plot = React.createClass({
   render: function() {
-    var updatePoint = this.props.updatePoint;
-    var circles = this.props.points.map(function(point, idx) {
-      return <Circle p={point} onMove={updatePoint(idx)} {...this.props} />
-    }.bind(this));
+    var circles = [
+      <Circle p={[0,0]} {...this.props} />,
+      <Circle p={this.props.vertex} onMove={this.props.setVertex} {...this.props} />,
+      <Circle p={this.props.root} axis={"x"} onMove={this.props.setRoot} {...this.props} />
+    ];
 
-    var firstPoint = this.props.points[0];
+    var firstPoint = [ 0,0 ];
     var yBasePoint = [ firstPoint[0] + this.props.x, firstPoint[1] ];
     var yTopPoint = [ yBasePoint[0], yBasePoint[1] + this.props.y ];
 
@@ -197,39 +196,72 @@ var ControlPanel = React.createClass({
       <div className="control"><span className="label">y:</span><span className="value">{this.props.y}</span></div>
       <div className="control"><span className="label">sx:</span><span className="value">{this.props.sx}</span></div>
       <div className="control"><span className="label">sy:</span><span className="value">{this.props.sy}</span></div>
+      <div className="control"><span className="label">v:</span><span className="value">{this.props.v}</span></div>
+      <div className="control"><span className="label">g:</span><span className="value">{this.props.g}</span></div>
+      <div className="control"><span className="label">t:</span><span className="value">{this.props.t} ({this.props.t*180/Math.PI})</span></div>
     </div>;
   }
 });
 
 var Page = React.createClass({
   getInitialState: function() {
-    return {
+    var state = {
       origin: [10,10],
       sx: 10,
       sy: 10,
-      points: [[0,0], [5,20], [8,5]],
       x: 10,
       y: 7,
-      v: 100,
+      v: 20,
       g: 9.8,
-      t: Math.PI/4,
-      h: 250,
-      svgToCoords: function(p) {
-        var ret = [ (p[0] - this.origin[0]) / this.sx, (this.h - this.origin[1] - p[1])/this.sy ];
-        return ret;
-      }
-    }
+      t: Math.PI/6,
+      h: 250
+    };
+    this.computeVertex(state);
+    this.computeRoot(state);
+    console.log("computed: %O", state);
+    return state;
   },
   coordsToSvg: function(p) {
-    var ret = [ p[0]*this.state.sx + this.state.origin[0], this.state.h - this.state.sy*p[1] - this.state.origin[1] ]
+    var ret = [
+      p[0]*this.state.sx + this.state.origin[0],
+      this.state.h - this.state.sy*p[1] - this.state.origin[1]
+    ];
     return ret;
   },
-  updatePoint: function(idx) {
-    var state = this.state;
-    return function(p) {
-      this.state.points[idx] = p;
-      this.setState(state);
-    }.bind(this);
+  svgToCoords: function(p) {
+    var ret = [
+      (p[0] - this.state.origin[0]) / this.state.sx,
+      (this.state.h - this.state.origin[1] - p[1])/this.state.sy
+    ];
+    return ret;
+  },
+  computeVertex: function(state) {
+    state = state || this.state;
+    var vx = state.v * state.v * Math.sin(2 * state.t) / (2 * state.g);
+    var vy = vx * Math.tan(state.t) / 2;
+    state.vertex = [ vx, vy ];
+  },
+  setVertex: function(p) {
+    var t = Math.atan(2 * p[1] / p[0]);
+    var v = Math.sqrt(this.state.g*(p[0]*p[0] + 4*p[1]*p[1])/(2*p[1]));
+    var root = [ 2*p[0], 0 ];
+    this.setState({ vertex: p, root: root, t: t, v: v });
+  },
+  computeRoot: function(state) {
+    state = state || this.state;
+    state.root = [ state.v * state.v * Math.sin(2 * state.t) / state.g /*2 * state.vertex[0]*/, 0 ];
+  },
+  setRoot: function(p) {
+    var vx = p[0] / 2;
+    var t = Math.asin(2 * this.state.g * vx / (this.state.v * this.state.v))/2;
+    if (isNaN(t)) return;
+    var vy = vx * Math.tan(t) / 2;
+    console.log("setRoot: %f,%f, %f, %s", vx, vy, t, p.join(','));
+    this.setState({
+      root: p,
+      vertex: [ vx, vy ],
+      t: t
+    });
   },
   render: function() {
     var methods = {
@@ -242,12 +274,15 @@ var Page = React.createClass({
               ).join(' L');
       }.bind(this),
       coordsToSvg: this.coordsToSvg,
+      svgToCoords: this.svgToCoords,
       updatePoint: this.updatePoint,
-      updateX: function(x) {
+      setVertex: this.setVertex,
+      setRoot: this.setRoot,
+      setX: function(x) {
         this.setState({ x: x });
       }.bind(this),
-      updateY: function(y) { this.setState({ y: y }); }.bind(this),
-      updateXY: function(x, y) { this.setState({ x:x, y:y })}.bind(this)
+      setY: function(y) { this.setState({ y: y }); }.bind(this),
+      setXY: function(x, y) { this.setState({ x:x, y:y })}.bind(this)
     }
     return <div>
       <Plot {...this.state} {...methods} />
