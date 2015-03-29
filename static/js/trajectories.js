@@ -150,6 +150,23 @@ var DraggableCorner = React.createClass({
   }
 });
 
+var GridLines = React.createClass({
+  render: function () {
+    var paths = [];
+    var maxX = window.innerWidth / this.props.sx;
+    var maxY = window.innerHeight / this.props.sy;
+    for (var x = 0; x <= maxX; x++) {
+      paths.push(<path d={this.props.path([x, -1], [x, maxY])} />);
+    }
+
+    for (var y = 0; y <= maxY; y++) {
+      paths.push(<path d={this.props.path([-1, y], [maxX, y])} />);
+    }
+
+    return <g className="grid-lines">{paths}</g>
+  }
+});
+
 var Plot = React.createClass({
   render: function() {
     var updatePoint = this.props.updatePoint;
@@ -162,6 +179,7 @@ var Plot = React.createClass({
     var yTopPoint = [ yBasePoint[0], yBasePoint[1] + this.props.y ];
 
     return <svg className="plot" height={this.props.h}>
+      <GridLines {...this.props} />
       <Parabola {...this.props} />
       {circles}
       <path d={this.props.path(firstPoint, yBasePoint)} />
